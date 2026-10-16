@@ -36,6 +36,9 @@ th{color:var(--mut);font-weight:600}
 .p{padding:2px 10px;border-radius:99px;font-size:12px}.p.y{background:var(--okbg);color:var(--ok)}.p.n{background:var(--nobg);color:var(--no)}
 a{color:var(--ac)}
 .pg{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.th{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--bd);cursor:zoom-in;background:var(--bd);display:block}
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:9;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:16px;cursor:zoom-out}
+#lb.on{display:flex}#lb img{max-width:100%;max-height:80vh;border-radius:8px;background:#fff}#lb a{color:#fff}
 #msg{padding:12px;border-radius:8px;background:var(--nobg);color:var(--no);display:none;margin-bottom:12px}
 </style>
 </head>
@@ -64,12 +67,14 @@ a{color:var(--ac)}
     <div class="pg"><span class="mut" id="pi"></span><span><button id="pp">ก่อนหน้า</button> <button id="pn">ถัดไป</button></span></div>
   </div>
 </div>
+<div id="lb"><img id="lbi" alt="รูปหลักฐาน"><a id="lbl" target="_blank" rel="noopener">เปิดใน Google Drive</a></div>
 <script>
 // ===== ตั้งค่า =====
 const CFG = {
   SHEET_ID: '1x7HLGfgV4p4dCleMo6QzTqd2X2biDnKn0KNjBiy45Lc',
   SHEET_NAME: 'รายชื่อ',
   MASK_ID: true,     // true = แสดงรหัสนักศึกษาแบบปิดบังบางส่วน (แนะนำเมื่อเผยแพร่สาธารณะ)
+  SHOW_IMAGE: true,  // true = แสดงรูปหลักฐานจาก Google Drive ในตาราง (กดที่รูปเพื่อขยาย)
   SHOW_LINK: false,  // true = แสดงคอลัมน์ลิงก์หลักฐาน
   REFRESH_MIN: 5,    // รีเฟรชอัตโนมัติทุกกี่นาที (0 = ปิด)
   PAGE: 50
@@ -141,7 +146,7 @@ function render(){
   const ks=Object.keys(t).sort(), mx=Math.max(1,...ks.map(d=>t[d]));
   $('#tl').innerHTML=ks.length?ks.map(d=>`<div class="tc" title="${d}: ${t[d]} คน"><span>${t[d]}</span><i style="height:${t[d]/mx*75}%"></i><span>${d.slice(8)}/${d.slice(5,7)}</span></div>`).join(''):'<span class="mut">ยังไม่มีข้อมูลวันที่</span>';
   fill('#fr','round','ทุกรอบ',(a,b)=>a.localeCompare(b,'th')); fill('#fg','gen','ทุกรุ่น',(a,b)=>b.localeCompare(a));
-  $('#th').innerHTML='<tr><th>ลำดับ</th><th>รหัสนักศึกษา</th><th>ชื่อ-นามสกุล</th><th>รอบ</th><th>รุ่น</th><th>สถานะ</th><th>ขวด</th><th>ส่งล่าสุด</th>'+(CFG.SHOW_LINK?'<th>หลักฐาน</th>':'')+'</tr>';
+  $('#th').innerHTML='<tr><th>ลำดับ</th><th>รหัสนักศึกษา</th><th>ชื่อ-นามสกุล</th><th>รอบ</th><th>รุ่น</th><th>สถานะ</th><th>ขวด</th><th>ส่งล่าสุด</th>'+(CFG.SHOW_IMAGE?'<th>รูปหลักฐาน</th>':'')+(CFG.SHOW_LINK?'<th>หลักฐาน</th>':'')+'</tr>';
   page=0; table();
 }
 
@@ -151,12 +156,16 @@ function fill(el,key,all,sf){
   s.value=cur;
 }
 
+const fid=u=>{const m=/[?&]id=([\w-]+)|\/d\/([\w-]+)/.exec(u||'');return m?(m[1]||m[2]):''};
+const thumb=(u,w)=>`https://drive.google.com/thumbnail?id=${fid(u)}&sz=w${w}`;
+const imgCell=r=>fid(r.link)?`<td><img class="th" loading="lazy" referrerpolicy="no-referrer" src="${thumb(r.link,200)}" data-u="${esc(r.link)}" alt="หลักฐาน"></td>`:'<td></td>';
+
 function table(){
   const q=$('#q').value.trim().toLowerCase(), fs=$('#fs').value, fr=$('#fr').value, fg=$('#fg').value;
   F=D.filter(r=>(!q||r.name.toLowerCase().includes(q)||r.id.includes(q))&&(fs===''||(fs==='1')===r.sent)&&(!fr||r.round===fr)&&(!fg||r.gen===fg));
   const pages=Math.max(1,Math.ceil(F.length/CFG.PAGE)); if(page>=pages)page=pages-1;
   const s=page*CFG.PAGE;
-  $('#tb').innerHTML=F.slice(s,s+CFG.PAGE).map(r=>`<tr><td>${esc(r.no)}</td><td>${esc(mask(r.id))}</td><td>${esc(r.name)}</td><td>${esc(r.round)}</td><td>${esc(r.gen)}</td><td><span class="p ${r.sent?'y':'n'}">${r.sent?'ส่งแล้ว':'ยังไม่ส่ง'}</span></td><td>${r.q||''}</td><td>${esc(r.last)}</td>${CFG.SHOW_LINK?`<td>${/^https?:\/\//.test(r.link)?`<a href="${esc(r.link)}" target="_blank" rel="noopener">ดูรูป</a>`:''}</td>`:''}</tr>`).join('');
+  $('#tb').innerHTML=F.slice(s,s+CFG.PAGE).map(r=>`<tr><td>${esc(r.no)}</td><td>${esc(mask(r.id))}</td><td>${esc(r.name)}</td><td>${esc(r.round)}</td><td>${esc(r.gen)}</td><td><span class="p ${r.sent?'y':'n'}">${r.sent?'ส่งแล้ว':'ยังไม่ส่ง'}</span></td><td>${r.q||''}</td><td>${esc(r.last)}</td>${CFG.SHOW_IMAGE?imgCell(r):''}${CFG.SHOW_LINK?`<td>${/^https?:\/\//.test(r.link)?`<a href="${esc(r.link)}" target="_blank" rel="noopener">ดูรูป</a>`:''}</td>`:''}</tr>`).join('');
   $('#pi').textContent=`แสดง ${F.length?s+1:0}-${Math.min(s+CFG.PAGE,F.length)} จาก ${F.length} รายการ (หน้า ${page+1}/${pages})`;
   $('#pp').disabled=page===0; $('#pn').disabled=page>=pages-1;
 }
@@ -164,6 +173,10 @@ function table(){
 ['#q','#fs','#fr','#fg'].forEach(s=>$(s).addEventListener('input',()=>{page=0;table()}));
 $('#pp').onclick=()=>{page--;table()}; $('#pn').onclick=()=>{page++;table()};
 $('#rf').onclick=load;
+$('#tb').addEventListener('error',e=>{const i=e.target;if(i.tagName==='IMG'){const a=document.createElement('a');a.href=i.dataset.u;a.target='_blank';a.rel='noopener';a.textContent='เปิดดูรูป';i.replaceWith(a)}},true);
+$('#tb').addEventListener('click',e=>{const i=e.target;if(i.classList.contains('th')){$('#lbi').src=thumb(i.dataset.u,1200);$('#lbl').href=i.dataset.u;$('#lb').classList.add('on')}});
+$('#lb').addEventListener('click',e=>{if(e.target.id!=='lbl')$('#lb').classList.remove('on')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#lb').classList.remove('on')});
 if(CFG.REFRESH_MIN>0) setInterval(load,CFG.REFRESH_MIN*60000);
 load();
 </script>
