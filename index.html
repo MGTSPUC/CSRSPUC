@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard การส่งขวดพลาสติก</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--tx:#1d2733;--mut:#6b7785;--bd:#e1e6ee;--ok:#2e9e5b;--no:#e0584f;--ac:#2563eb;--okbg:#dff3e6;--nobg:#fde4e2}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#18222e;--tx:#e8edf3;--mut:#93a1b1;--bd:#263445;--ok:#43c17a;--no:#f0716a;--ac:#6ea0ff;--okbg:#17362a;--nobg:#432524}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Sarabun',Tahoma,Arial,sans-serif;font-size:15px;padding:16px}
+.w{max-width:1100px;margin:0 auto}
+h1{font-size:22px;margin:0}h2{font-size:16px;margin:0 0 12px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.mut{color:var(--mut);font-size:13px}
+button{font:inherit;background:var(--ac);color:#fff;border:0;border-radius:8px;padding:7px 14px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.k b{display:block;font-size:26px;line-height:1.2}.k span{color:var(--mut);font-size:13px}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:10px;margin-bottom:14px}
+.br{display:grid;grid-template-columns:130px 1fr 110px;gap:8px;align-items:center;margin:7px 0;font-size:13px}
+.bt{background:var(--nobg);border-radius:6px;height:14px;overflow:hidden}.bt i{display:block;height:100%;background:var(--ok)}
+.bv{text-align:right;color:var(--mut)}
+.tl{display:flex;align-items:flex-end;gap:6px;height:170px;overflow-x:auto}
+.tc{flex:0 0 34px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:11px;color:var(--mut)}
+.tc i{display:block;width:70%;background:var(--ac);border-radius:4px 4px 0 0;min-height:2px}
+.fl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+input,select{font:inherit;padding:7px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)}
+input{flex:1;min-width:180px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mut);font-weight:600}
+.p{padding:2px 10px;border-radius:99px;font-size:12px}.p.y{background:var(--okbg);color:var(--ok)}.p.n{background:var(--nobg);color:var(--no)}
+a{color:var(--ac)}
+.pg{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+#msg{padding:12px;border-radius:8px;background:var(--nobg);color:var(--no);display:none;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="top">
+    <div><h1>♻️ Dashboard การส่งขวดพลาสติก</h1><div class="mut" id="upd">กำลังโหลดข้อมูล...</div></div>
+    <button id="rf">รีเฟรชข้อมูล</button>
+  </div>
+  <div id="msg"></div>
+  <div class="kp" id="kp"></div>
+  <div class="g2">
+    <div class="card"><h2>ความคืบหน้าแยกตามรอบ</h2><div id="b1"></div></div>
+    <div class="card"><h2>ความคืบหน้าแยกตามรุ่น (รหัสปี)</h2><div id="b2"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><h2>จำนวนคนที่ส่ง แยกตามวัน <span class="mut">(นับตามวันที่ส่งล่าสุดของแต่ละคน)</span></h2><div class="tl" id="tl"></div></div>
+  <div class="card">
+    <h2>รายชื่อนักศึกษา</h2>
+    <div class="fl">
+      <input id="q" placeholder="ค้นหาชื่อ หรือรหัสนักศึกษา">
+      <select id="fs"><option value="">ทุกสถานะ</option><option value="1">ส่งแล้ว</option><option value="0">ยังไม่ส่ง</option></select>
+      <select id="fr"><option value="">ทุกรอบ</option></select>
+      <select id="fg"><option value="">ทุกรุ่น</option></select>
+    </div>
+    <div class="tw"><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+    <div class="pg"><span class="mut" id="pi"></span><span><button id="pp">ก่อนหน้า</button> <button id="pn">ถัดไป</button></span></div>
+  </div>
+</div>
+<script>
+// ===== ตั้งค่า =====
+const CFG = {
+  SHEET_ID: '1x7HLGfgV4p4dCleMo6QzTqd2X2biDnKn0KNjBiy45Lc',
+  SHEET_NAME: 'รายชื่อ',
+  MASK_ID: true,     // true = แสดงรหัสนักศึกษาแบบปิดบังบางส่วน (แนะนำเมื่อเผยแพร่สาธารณะ)
+  SHOW_LINK: false,  // true = แสดงคอลัมน์ลิงก์หลักฐาน
+  REFRESH_MIN: 5,    // รีเฟรชอัตโนมัติทุกกี่นาที (0 = ปิด)
+  PAGE: 50
+};
+// ====================
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mask = id => CFG.MASK_ID ? id.slice(0,3) + 'xxx' + id.slice(-2) : id;
+let D = [], page = 0, F = [];
+
+function parseCSV(t){
+  const r=[]; let row=[], f='', q=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(q){ if(c=='"'){ if(t[i+1]=='"'){f+='"';i++} else q=false } else f+=c }
+    else if(c=='"') q=true;
+    else if(c==','){ row.push(f); f='' }
+    else if(c=='\n'){ row.push(f); r.push(row); row=[]; f='' }
+    else if(c!='\r') f+=c;
+  }
+  if(f!==''||row.length){ row.push(f); r.push(row) }
+  return r;
+}
+
+async function load(){
+  $('#upd').textContent='กำลังโหลดข้อมูล...'; $('#msg').style.display='none';
+  try{
+    const u=`https://docs.google.com/spreadsheets/d/${CFG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(CFG.SHEET_NAME)}&_=${Date.now()}`;
+    const res=await fetch(u);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const rows=parseCSV(await res.text());
+    const h=rows[0].map(s=>s.trim());
+    const ix=n=>h.findIndex(x=>x.startsWith(n));
+    const c={no:ix('ลำดับ'),id:ix('รหัสนักศึกษา'),name:ix('ชื่อ-นามสกุล'),round:ix('รอบ'),gen:ix('รุ่น'),st:ix('สถานะ'),n:ix('จำนวนครั้ง'),q:ix('จำนวนขวด'),last:ix('ส่งล่าสุด'),link:ix('ลิงก์')};
+    const miss=Object.keys(c).filter(k=>c[k]<0);
+    if(miss.length) throw new Error('ไม่พบคอลัมน์: '+miss.join(', '));
+    D=rows.slice(1).filter(r=>/^\d+$/.test((r[c.id]||'').trim())).map(r=>({
+      no:r[c.no], id:r[c.id].trim(), name:r[c.name]||'', round:(r[c.round]||'').trim(), gen:(r[c.gen]||'').trim(),
+      sent:(r[c.st]||'').trim()==='ส่งแล้ว', n:+r[c.n]||0, q:+r[c.q]||0, last:r[c.last]||'', link:r[c.link]||''
+    }));
+    if(!D.length) throw new Error('ไม่พบข้อมูลนักศึกษาในชีต');
+    $('#upd').textContent='อัปเดตล่าสุด: '+new Date().toLocaleString('th-TH');
+    render();
+  }catch(e){
+    const m=$('#msg'); m.style.display='block';
+    m.textContent='โหลดข้อมูลไม่สำเร็จ ('+e.message+') ตรวจว่าชีตแชร์แบบ "ทุกคนที่มีลิงก์ดูได้" และมีแท็บชื่อ "'+CFG.SHEET_NAME+'"';
+    $('#upd').textContent='โหลดไม่สำเร็จ';
+  }
+}
+
+function bars(el,key,sortFn){
+  const m={};
+  D.forEach(r=>{const k=r[key]||'ไม่ระบุ'; (m[k]=m[k]||{t:0,s:0}).t++; if(r.sent)m[k].s++});
+  $(el).innerHTML=Object.keys(m).sort(sortFn).map(k=>{
+    const {t,s}=m[k], p=t?s/t*100:0;
+    return `<div class="br"><div>${esc(k)}</div><div class="bt"><i style="width:${p}%"></i></div><div class="bv">${s}/${t} · ${p.toFixed(1)}%</div></div>`;
+  }).join('');
+}
+
+function render(){
+  const tot=D.length, sent=D.filter(r=>r.sent).length;
+  const bot=D.reduce((a,r)=>a+r.q,0), rep=D.filter(r=>r.n>1).length;
+  const k=[[tot,'นักศึกษาทั้งหมด'],[sent,'ส่งแล้ว (คน)'],[(sent/tot*100).toFixed(1)+'%','อัตราการส่ง'],[tot-sent,'ยังไม่ส่ง (คน)'],[bot.toLocaleString(),'จำนวนขวดรวม'],[rep,'ส่งมากกว่า 1 ครั้ง (คน)']];
+  $('#kp').innerHTML=k.map(([v,l])=>`<div class="card k"><b>${v}</b><span>${l}</span></div>`).join('');
+  bars('#b1','round',(a,b)=>a.localeCompare(b,'th'));
+  bars('#b2','gen',(a,b)=>b.localeCompare(a));
+  const t={};
+  D.forEach(r=>{const m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(r.last); if(m){const d=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; t[d]=(t[d]||0)+1}});
+  const ks=Object.keys(t).sort(), mx=Math.max(1,...ks.map(d=>t[d]));
+  $('#tl').innerHTML=ks.length?ks.map(d=>`<div class="tc" title="${d}: ${t[d]} คน"><span>${t[d]}</span><i style="height:${t[d]/mx*75}%"></i><span>${d.slice(8)}/${d.slice(5,7)}</span></div>`).join(''):'<span class="mut">ยังไม่มีข้อมูลวันที่</span>';
+  fill('#fr','round','ทุกรอบ',(a,b)=>a.localeCompare(b,'th')); fill('#fg','gen','ทุกรุ่น',(a,b)=>b.localeCompare(a));
+  $('#th').innerHTML='<tr><th>ลำดับ</th><th>รหัสนักศึกษา</th><th>ชื่อ-นามสกุล</th><th>รอบ</th><th>รุ่น</th><th>สถานะ</th><th>ขวด</th><th>ส่งล่าสุด</th>'+(CFG.SHOW_LINK?'<th>หลักฐาน</th>':'')+'</tr>';
+  page=0; table();
+}
+
+function fill(el,key,all,sf){
+  const s=$(el), cur=s.value;
+  s.innerHTML=`<option value="">${all}</option>`+[...new Set(D.map(r=>r[key]).filter(Boolean))].sort(sf).map(v=>`<option>${esc(v)}</option>`).join('');
+  s.value=cur;
+}
+
+function table(){
+  const q=$('#q').value.trim().toLowerCase(), fs=$('#fs').value, fr=$('#fr').value, fg=$('#fg').value;
+  F=D.filter(r=>(!q||r.name.toLowerCase().includes(q)||r.id.includes(q))&&(fs===''||(fs==='1')===r.sent)&&(!fr||r.round===fr)&&(!fg||r.gen===fg));
+  const pages=Math.max(1,Math.ceil(F.length/CFG.PAGE)); if(page>=pages)page=pages-1;
+  const s=page*CFG.PAGE;
+  $('#tb').innerHTML=F.slice(s,s+CFG.PAGE).map(r=>`<tr><td>${esc(r.no)}</td><td>${esc(mask(r.id))}</td><td>${esc(r.name)}</td><td>${esc(r.round)}</td><td>${esc(r.gen)}</td><td><span class="p ${r.sent?'y':'n'}">${r.sent?'ส่งแล้ว':'ยังไม่ส่ง'}</span></td><td>${r.q||''}</td><td>${esc(r.last)}</td>${CFG.SHOW_LINK?`<td>${/^https?:\/\//.test(r.link)?`<a href="${esc(r.link)}" target="_blank" rel="noopener">ดูรูป</a>`:''}</td>`:''}</tr>`).join('');
+  $('#pi').textContent=`แสดง ${F.length?s+1:0}-${Math.min(s+CFG.PAGE,F.length)} จาก ${F.length} รายการ (หน้า ${page+1}/${pages})`;
+  $('#pp').disabled=page===0; $('#pn').disabled=page>=pages-1;
+}
+
+['#q','#fs','#fr','#fg'].forEach(s=>$(s).addEventListener('input',()=>{page=0;table()}));
+$('#pp').onclick=()=>{page--;table()}; $('#pn').onclick=()=>{page++;table()};
+$('#rf').onclick=load;
+if(CFG.REFRESH_MIN>0) setInterval(load,CFG.REFRESH_MIN*60000);
+load();
+</script>
+</body>
+</html>
